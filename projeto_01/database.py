@@ -1,6 +1,6 @@
 import sqlite3
 
-BANCO = "projeto_01/docs/system.db"
+BANCO = "docs/system.db"
 
 class DataBase():
     def __init__(self, name = BANCO):

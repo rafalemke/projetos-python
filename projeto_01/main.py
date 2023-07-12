@@ -1,4 +1,5 @@
 from os import access
+import pandas as pd
 from PySide6.QtWidgets import *
 from PySide6 import QtCore
 from PySide6.QtGui import QIcon
@@ -8,11 +9,14 @@ import sys
 from database import DataBase
 from xml_files import Read_xml
 import sqlite3
-import pandas as pd
 from PySide6.QtSql import QSqlDatabase, QSqlTableModel
 import re
 from datetime import date
 import matplotlib.pyplot as plt
+
+
+
+
 
 
 
@@ -22,6 +26,8 @@ class Login(QWidget, Ui_Login):
         self.tentativas = 0
         self.setupUi(self)
         self.setWindowTitle("Login do Sistema")
+        appIcon = QIcon("imgs/icon.ico")
+        self.setWindowIcon(appIcon)
 
         self.pushButton.clicked.connect(self.checkLogin)
 
@@ -30,8 +36,7 @@ class Login(QWidget, Ui_Login):
     def checkLogin(self):
         self.users = DataBase()
         self.users.conecta()
-        appIcon = QIcon("projeto_01/imgs/icon.ico")
-        self.setWindowIcon(appIcon)
+        
         autenticado = self.users.check_user(self.txt_user.text(), self.txt_password.text()).lower()
 
         if autenticado == "administrador" or autenticado == "user":
@@ -59,7 +64,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__()
         self.setupUi(self)
         self.setWindowTitle("Sistema de Gerenciamento")
-        appIcon = QIcon("_imgs/icon.ico")
+        appIcon = QIcon("imgs/icon.ico")
         self.setWindowIcon(appIcon)
         self.user = username
         
@@ -167,7 +172,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tw_estoque.setStyleSheet("font-size: 15px;")
         self.tw_estoque.setStyleSheet("QHeaderView{ color:black}")
 
-        cn = sqlite3.connect('projeto_01/docs/system.db')
+        cn = sqlite3.connect('docs/system.db')
         result = pd.read_sql_query("SELECT * FROM Notas WHERE data_saida = ''", cn)
         result = result.values.tolist()
 
@@ -193,7 +198,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tw_saida.setStyleSheet(u" QHeaderView{ color;black}; font-size: 15px;")
         
 
-        cn = sqlite3.connect('projeto_01/docs/system.db')
+        cn = sqlite3.connect('docs/system.db')
         result = pd.read_sql_query("SELECT Nfe, serie, data_importacao, data_saida, usuario FROM Notas WHERE data_saida != ''", cn)
         result = result.values.tolist()
 
@@ -220,7 +225,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tb_estoque.setStyleSheet(u" QHeaderView{ color:black}; color:black; font-size:15px;")
 
         db = QSqlDatabase("QSQLITE")
-        db.setDatabaseName("projeto_01/docs/system.db")
+        db.setDatabaseName("docs/system.db")
         db.open()
 
         self.model = QSqlTableModel(db=db)
@@ -318,9 +323,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def excel_file(self):
 
-        con = sqlite3.connect('projeto_01/docs/system.db')
+        con = sqlite3.connect('docs/system.db')
         result = pd.read_sql_query("SELECT * FROM Notas", con)
-        result.to_excel("projeto_01/docs/Resumo de notas.xlsx", sheet_name='Notas', index=False)
+        result.to_excel("docs/Resumo de notas.xlsx", sheet_name='Notas', index=False)
 
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
@@ -331,7 +336,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def graphic(self):
 
-        con = sqlite3.connect('projeto_01/docs/system.db')
+        con = sqlite3.connect('docs/system.db')
         estoque = pd.read_sql_query('SELECT * FROM Notas WHERE data_saida == ""', con)
         saida = pd.read_sql_query('SELECT * FROM Notas WHERE data_saida != ""', con)
 
