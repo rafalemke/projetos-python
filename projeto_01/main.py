@@ -1,6 +1,7 @@
 from os import access
 from PySide6.QtWidgets import *
 from PySide6 import QtCore
+from PySide6.QtGui import QIcon
 from ui_login import Ui_Login
 from ui_main import Ui_MainWindow
 import sys
@@ -9,6 +10,10 @@ from xml_files import Read_xml
 import sqlite3
 import pandas as pd
 from PySide6.QtSql import QSqlDatabase, QSqlTableModel
+import re
+from datetime import date
+import matplotlib.pyplot as plt
+
 
 
 class Login(QWidget, Ui_Login):
@@ -25,10 +30,12 @@ class Login(QWidget, Ui_Login):
     def checkLogin(self):
         self.users = DataBase()
         self.users.conecta()
+        appIcon = QIcon("projeto_01/imgs/icon.ico")
+        self.setWindowIcon(appIcon)
         autenticado = self.users.check_user(self.txt_user.text(), self.txt_password.text()).lower()
 
         if autenticado == "administrador" or autenticado == "user":
-            self.w = MainWindow(autenticado.lower())
+            self.w = MainWindow(self.txt_user.text(), autenticado.lower())
             self.w.show()
             self.close()    
         else:
@@ -48,16 +55,19 @@ class Login(QWidget, Ui_Login):
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
-    def __init__(self, user):
+    def __init__(self, username, user):
         super(MainWindow, self).__init__()
         self.setupUi(self)
         self.setWindowTitle("Sistema de Gerenciamento")
-
+        appIcon = QIcon("_imgs/icon.ico")
+        self.setWindowIcon(appIcon)
+        self.user = username
+        
         if user.lower() ==  "user":
             self.btn_pg_cadastro.setVisible(False)
 
         # -------------- Paginas do sistema ------------------#
-        self.btn_home.clicked.connect(lambda: self.pages.setCurrentWidget(self.pg_home))
+        self.btn_home.clicked.connect(lambda: self.pages.setCurrentWidget(self.pg_aahome))
         self.btn_tables.clicked.connect(lambda: self.pages.setCurrentWidget(self.pg_tables))
         self.btn_sobre.clicked.connect(lambda: self.pages.setCurrentWidget(self.pg_sobre))
         self.btn_contato.clicked.connect(lambda: self.pages.setCurrentWidget(self.pg_contato))
@@ -69,6 +79,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # -------------- Arquivo XML -----------------------#
         self.btn_open_xml.clicked.connect(self.open_path)
         self.btn_importar_xml.clicked.connect(self.import_xml_files)
+
+        # FILTRO
+        self.txt_filtro.textChanged.connect(self.update_filter)
+
+        # Gerar saida e estorno
+        self.btn_gerar.clicked.connect(self.gerar_saida)
+        self.btn_extornar.clicked.connect(self.gerar_estorno)
+
+        self.btn_excel.clicked.connect(self.excel_file)
+
+        self.btn_grafico.clicked.connect(self.graphic)
 
         self.reset_table()
 
@@ -195,40 +216,135 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def table_geral(self):
-        self.tb_estoque.setStyleSheet("font-size: 15px;")
-        self.tb_estoque.setStyleSheet("QHeaderView{ color:black}")
-
-        cn = sqlite3.connect('projeto_01/docs/system.db')
-        result = pd.read_sql_query("SELECT * FROM Notas" , cn)
-        result = result.values.tolist()
-
-        self.x = ""
-
-        for i in result:
-            # faz o check para identificar a mesma nota e adicionar um nivel
-            if i[0] == self.x:
-                QTreeWidgetItem(self.campo, i)
-            else:
-                self.campo = QTreeWidgetItem(self.tb_estoque, i)
-                self.campo.setCheckState(0, QtCore.Qt.CheckState.Unchecked)
-            
-            self.x = i[0]
         
-        self.tb_estoque.setSortingEnabled(True)
+        self.tb_estoque.setStyleSheet(u" QHeaderView{ color:black}; color:black; font-size:15px;")
 
-        for i in range(1,15):
-            self.tb_estoque.resizeColumnToContents(i)
+        db = QSqlDatabase("QSQLITE")
+        db.setDatabaseName("projeto_01/docs/system.db")
+        db.open()
+
+        self.model = QSqlTableModel(db=db)
+        self.tb_estoque.setModel(self.model)
+        self.model.setTable("Notas")
+        self.model.select()
 
 
     def reset_table(self):
         self.tw_estoque.clear()
         self.tw_saida.clear()
+        
 
         self.table_saida()
         self.table_estoque()
         self.table_geral()
 
 
+    def update_filter(self, s):
+
+        s = re.sub("[\W_]+", "", s)
+        filter_str = f'Nfe LIKE "%{s}%"'
+        self.model.setFilter(filter_str)
+
+
+    def gerar_saida(self):
+
+        self.checked_items_out = []
+
+        def recurse(parent_item):
+            for i in range(parent_item.childCount()):
+                child = parent_item.child(i)
+                grand_children = child.childCount()
+                if grand_children > 0:
+                    recurse(child)
+                if child.checkState(0) == QtCore.Qt.Checked:
+                    self.checked_items_out.append(child.text(0))
+        recurse(self.tw_estoque.invisibleRootItem())
+
+        # Pergunta se usuario realmente deseja fazer isso.
+        self.question('saida')
+
+
+    def gerar_estorno(self):
+
+        self.checked_items = []
+
+        def recurse(parent_item):
+            for i in range(parent_item.childCount()):
+                child = parent_item.child(i)
+                grand_children = child.childCount()
+                if grand_children > 0:
+                    recurse(child)
+                if child.checkState(0) == QtCore.Qt.Checked:
+                    self.checked_items.append(child.text(0))
+
+        recurse(self.tw_saida.invisibleRootItem())
+        self.question('estorno')
+
+
+    def question(self, table):
+
+        msgBox = QMessageBox()
+
+        if table == "estorno":
+            msgBox.setText("Deseja estornar as notas selecionadas?")
+            msgBox.setInformativeText("As selecionadas voltarão para o estoque \n clique em 'Yes' para confirmar.")
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msgBox.setDetailedText(f"Notas: {self.checked_items}")
+        else:
+            msgBox.setText("Deseja gerar saída das notas selecionadas?")
+            msgBox.setInformativeText("As notas selecionadas serão baixadas no estoque. \n Clique em 'Yes' para confirmar.")
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msgBox.setDetailedText(f"Notas: {self.checked_items_out}")
+        
+        msgBox.setIcon(QMessageBox.Question)
+        ret = msgBox.exec()
+
+        if ret == QMessageBox.Yes:
+            if table == "estorno":
+                self.db = DataBase()
+                self.db.conecta()
+                self.db.update_estorno(self.checked_items)
+                self.db.close_connection()
+                self.reset_table()
+            else:
+                data_saida = date.today()
+                data_saida = data_saida.strftime('%d/%m/%Y')
+                self.db = DataBase()
+                self.db.conecta()
+                self.db.update_estoque(data_saida, self.user, self.checked_items_out)
+                self.db.close_connection()
+                self.reset_table()
+
+
+    def excel_file(self):
+
+        con = sqlite3.connect('projeto_01/docs/system.db')
+        result = pd.read_sql_query("SELECT * FROM Notas", con)
+        result.to_excel("projeto_01/docs/Resumo de notas.xlsx", sheet_name='Notas', index=False)
+
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Relatório de Notas")
+        msg.setText("Relatório gerado com sucesso!")
+        msg.exec()
+
+
+    def graphic(self):
+
+        con = sqlite3.connect('projeto_01/docs/system.db')
+        estoque = pd.read_sql_query('SELECT * FROM Notas WHERE data_saida == ""', con)
+        saida = pd.read_sql_query('SELECT * FROM Notas WHERE data_saida != ""', con)
+
+        estoque = len(estoque)
+        saida = len(saida)
+
+        labels = "Estoque", "Saídas"
+        sizes = [estoque, saida]
+        fig1, axl = plt.subplots()
+        axl.pie(sizes, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90)
+        axl.axis("equal")
+
+        plt.show()
 
 
 

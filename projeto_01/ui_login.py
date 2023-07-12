@@ -56,14 +56,17 @@ class Ui_Login(object):
         sizePolicy.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
         self.label.setSizePolicy(sizePolicy)
         self.label.setMinimumSize(QSize(250, 300))
-        self.label.setMaximumSize(QSize(300, 200))
+        self.label.setMaximumSize(QSize(320, 200))
         self.label.setBaseSize(QSize(50, 50))
         self.label.setFocusPolicy(Qt.NoFocus)
         self.label.setContextMenuPolicy(Qt.CustomContextMenu)
         self.label.setAcceptDrops(True)
-        self.label.setStyleSheet(u"align: center")
-        self.label.setPixmap(QPixmap(u"projeto_01/icon_title.png"))
+        self.label.setStyleSheet(u"padding-right:20px;\n"
+"padding-top:50px")
+        self.label.setPixmap(QPixmap(u"projeto_01/imgs/icon_title.png"))
         self.label.setScaledContents(True)
+        self.label.setMargin(-21)
+        self.label.setIndent(0)
 
         self.horizontalLayout.addWidget(self.label)
 
@@ -94,6 +97,7 @@ class Ui_Login(object):
 
         self.pushButton = QPushButton(self.frame)
         self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setMinimumSize(QSize(0, 120))
         font1 = QFont()
         font1.setPointSize(12)
         self.pushButton.setFont(font1)
