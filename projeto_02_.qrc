@@ -1,0 +1,10 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>projeto_02/icons/add_user.png</file>
+    <file>projeto_02/icons/email.png</file>
+    <file>projeto_02/icons/icon.ico</file>
+    <file>projeto_02/icons/icon_title.png</file>
+    <file>projeto_02/icons/logo.png</file>
+    <file>projeto_02/icons/whats.png</file>
+  </qresource>
+</RCC>
