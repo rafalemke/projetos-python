@@ -9,10 +9,11 @@
           <tr>
             <th scope="col">Id</th>
             <th scope="col">Title</th>
-            <th scope="col">Status</th>
+            
             <th scope="col">Descrição</th>
             <th scope="col">Criada em</th>
             <th scope="col">Data de expiração</th>
+            <th scope="col">Status</th>
             <th scope="col">Ações</th>
           </tr>
         </thead>
@@ -21,10 +22,21 @@
                 <tr>
                     <td>{{task.pk}}</td>
                     <td>{{task.title}}</td>
-                    <td>{{task.status}}</td>
+                    
+                    
                     <td>{{task.description}}</td>
                     <td>{{task.created_at}}</td>
                     <td>{{task.due_date}}</td>
+                    <td>
+                      {% if task.status == 'P' %}
+                          <span class="badge bg-warning" title="Pendente" >P</span>
+                      {% elif task.status == 'A' %}
+                          <span class="badge bg-info" title="Em andamento" >A</span>
+                      {% elif task.status == 'C' %}
+                          <span class="badge bg-success" title="Concluido" >C</span>
+                    
+                      {% endif %}
+                      </td>
                     <td>
                       <a href="{% url "task-edit" pk=task.pk %}" class="btn btn-primary btn-sm">Editar</a>
                       <a href="{% url "task-del" pk=task.pk %}" class="btn btn-danger btn-sm">Excluir</a>
