@@ -1,3 +1,4 @@
+from django.db.models.query import QuerySet
 from django.shortcuts import render
 from django.views.generic import TemplateView, ListView
 from django.views.generic.edit import UpdateView, DeleteView, CreateView
@@ -14,6 +15,15 @@ class TaskListView(ListView):
     model = Task
     template_name = 'tasks/tasks_list.html'
     context_object_name = 'tasks'
+
+    def get_queryset(self):
+        query_set =  super().get_queryset()
+        status = self.request.GET.get('status')
+
+        if status:
+            query_set = query_set.filter(status=status)
+        return query_set
+
 
 class HomeView(TemplateView):
     
