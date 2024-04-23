@@ -7,5 +7,19 @@
     </h1>
     
     <p> Aplicação criada para cadastro de tarefas.</p>
+    
+    <div style="position: absolute;
+            right: 5%;
+            top: 30%;
+            transform: translateY(-50%);
+            background-color: aliceblue;
+            border-radius: 5%;
+            padding: 15px;">
+        <p>Cidade: {{ cidade }}</p>    
+        <p>Temperatura: {{ weather_data.temp_c }}°C</p>
+        <p>Condição:  <img src="{{ weather_data.condition.icon }}" alt="img"></p>
+        <p>Vento: {{ weather_data.wind_kph }}</p>
+    </div>
+    
 
 {% endblock content %}

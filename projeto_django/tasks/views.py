@@ -1,10 +1,11 @@
 from django.db.models.query import QuerySet
 from django.shortcuts import render
-from django.views.generic import TemplateView, ListView
+from django.views.generic import View, ListView
 from django.views.generic.edit import UpdateView, DeleteView, CreateView
 from .models import Task
 from .forms import TaskForm, TaskFormCreate
 from django.urls import reverse_lazy
+import requests
 # Create your views here.
 
 # def task_list(request):
@@ -25,9 +26,15 @@ class TaskListView(ListView):
         return query_set
 
 
-class HomeView(TemplateView):
+class HomeView(View):
     
     template_name = 'tasks/home.html'
+    def get(self, request, *args, **kwargs):
+        # ip = get_client_ip(request)
+        ip = '170.244.78.204'
+        cidade = get_location(ip)
+        weather_data = get_weather_data(cidade)
+        return render(request, 'tasks/home.html', {'weather_data': weather_data, 'cidade': cidade})
 
 class TaskUpdateView(UpdateView):
     model = Task
@@ -50,3 +57,23 @@ class TaskCreateView(CreateView):
     template_name = "tasks/task_add.html"
     success_url = reverse_lazy('task-list')
 
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+# ip = '170.244.78.204'
+def get_location(ip):
+    YOUR_ACCESS_KEY = '4b25b7d068d90fd4511ec360d0ae67c4'
+    response = requests.get(f'http://api.ipstack.com/{ip}?access_key={YOUR_ACCESS_KEY}')
+    geodata = response.json()
+    return geodata['city']
+
+def get_weather_data(cidade):
+    response = requests.get(f'http://api.weatherapi.com/v1/current.json?key=dd8102c525204cbb900230149243103&q={cidade}')
+    weather_data = response.json()
+    return weather_data['current']
